@@ -1,0 +1,25 @@
+# Paths normalized for publication; commands are relative to the repository root.
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage baseline --method persistence --worker-seconds 10799.999076541513 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline val persistence: cost=253920796.95 gap=12.188% mean_nrmse=0.7639
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage baseline --method seasonal_daily --worker-seconds 10795.238333582878 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline val seasonal_daily: cost=231777914.33 gap=2.405% mean_nrmse=0.3041
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage baseline --method seasonal_weekly --worker-seconds 10790.164232207462 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline val seasonal_weekly: cost=230660013.98 gap=1.911% mean_nrmse=0.2635
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage baseline --method ridge --worker-seconds 10785.007003416307 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline val ridge: cost=229135398.49 gap=1.237% mean_nrmse=0.1757
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage test --method persistence --worker-seconds 9637.164959833026 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline test persistence: cost=239725058.86 gap=13.697% mean_nrmse=0.7733
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage test --method seasonal_daily --worker-seconds 9632.270630625077 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline test seasonal_daily: cost=216474084.04 gap=2.669% mean_nrmse=0.3166
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage test --method seasonal_weekly --worker-seconds 9626.159238416702 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline test seasonal_weekly: cost=214582577.37 gap=1.772% mean_nrmse=0.2703
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/baseline --stage test --method ridge --worker-seconds 9620.558466874994 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+baseline test ridge: cost=213724872.68 gap=1.365% mean_nrmse=0.1817

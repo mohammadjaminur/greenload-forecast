@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "generator": "independent-streams-v2",
+    "data_seed": 42,
+    "total_hours": 4320,
+    "num_loc": 10,
+    "max_cap": 1.0,
+    "workload_upper_fraction": 0.95
+  },
+  "checksum": "ddcf64d5a3ec1b98ac0efbd46883fa06e1ec9fb6fced97a75cabf5c0ff886f7a",
+  "path": "../datasets/5b4129c21abb0429.npz",
+  "split_hours": {
+    "train": [
+      168,
+      2880
+    ],
+    "val": [
+      2880,
+      3600
+    ],
+    "test": [
+      3600,
+      4320
+    ]
+  },
+  "normalization_fit_hours": [
+    0,
+    2880
+  ]
+}

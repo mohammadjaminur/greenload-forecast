@@ -1,0 +1,34 @@
+{
+  "workload": {
+    "complete": true,
+    "best_epoch": 30,
+    "best_val_loss": 0.07478449493646622,
+    "epochs": 36,
+    "elapsed_seconds": 8.265271957963705,
+    "stopping_reason": "early_stopping"
+  },
+  "price": {
+    "complete": true,
+    "best_epoch": 35,
+    "best_val_loss": 0.09946846216917038,
+    "epochs": 43,
+    "elapsed_seconds": 50.89773462433368,
+    "stopping_reason": "early_stopping"
+  },
+  "water": {
+    "complete": true,
+    "best_epoch": 44,
+    "best_val_loss": 0.14341700077056885,
+    "epochs": 52,
+    "elapsed_seconds": 68.28698270767927,
+    "stopping_reason": "early_stopping"
+  },
+  "carbon": {
+    "complete": true,
+    "best_epoch": 59,
+    "best_val_loss": 0.14111089706420898,
+    "epochs": 60,
+    "elapsed_seconds": 80.78263824991882,
+    "stopping_reason": "max_epochs"
+  }
+}

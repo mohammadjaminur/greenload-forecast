@@ -1,0 +1,18 @@
+{
+  "checked_utc": "2026-10-21T03:34:01Z",
+  "source_sha256": "87f9355a8a8fa6d5b206decdc329c12b735e8d16c80fdbbfc9b0ce9385c714cc",
+  "clean_export_tests": "37 passed",
+  "clean_export_lint": "passed",
+  "cached_result_resume_without_weights_or_arrays": "passed",
+  "notebook_execution_without_weights_or_arrays": "passed",
+  "relative_documentation_links": "passed",
+  "staged_credential_pattern_scan": "passed",
+  "console_paths": "normalized relative to repository; numerical results unchanged",
+  "local_only_artifacts": [
+    "model checkpoints (*.pt)",
+    "generated data and prediction arrays (*.npz)",
+    "smoke output",
+    "virtual environment"
+  ],
+  "preexisting_ci_workflow": "unchanged and excluded; existing OAuth token lacks workflow scope"
+}

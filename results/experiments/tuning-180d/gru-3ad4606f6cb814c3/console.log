@@ -1,0 +1,40 @@
+# Paths normalized for publication; commands are relative to the repository root.
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/gru-3ad4606f6cb814c3 --stage train --method gru --worker-seconds 7680.703714249656 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+gru-3ad4606f6cb814c3 workload epoch=1 train=0.39527 val=0.09931
+gru-3ad4606f6cb814c3 workload epoch=5 train=0.03394 val=0.08279
+gru-3ad4606f6cb814c3 workload epoch=10 train=0.02661 val=0.07535
+gru-3ad4606f6cb814c3 workload epoch=15 train=0.02511 val=0.07828
+gru-3ad4606f6cb814c3 price epoch=1 train=0.51075 val=0.37229
+gru-3ad4606f6cb814c3 price epoch=5 train=0.01814 val=0.43623
+gru-3ad4606f6cb814c3 price epoch=10 train=0.00968 val=0.06576
+gru-3ad4606f6cb814c3 price epoch=15 train=0.00920 val=0.04959
+gru-3ad4606f6cb814c3 price epoch=20 train=0.00883 val=0.07245
+gru-3ad4606f6cb814c3 price epoch=25 train=0.00930 val=0.03672
+gru-3ad4606f6cb814c3 price epoch=30 train=0.00934 val=0.04095
+gru-3ad4606f6cb814c3 price epoch=35 train=0.01013 val=0.03157
+gru-3ad4606f6cb814c3 price epoch=40 train=0.01065 val=0.04988
+gru-3ad4606f6cb814c3 water epoch=1 train=0.54144 val=0.25171
+gru-3ad4606f6cb814c3 water epoch=5 train=0.01835 val=0.30791
+gru-3ad4606f6cb814c3 water epoch=10 train=0.01044 val=0.06307
+gru-3ad4606f6cb814c3 water epoch=15 train=0.00950 val=0.04565
+gru-3ad4606f6cb814c3 water epoch=20 train=0.00932 val=0.03928
+gru-3ad4606f6cb814c3 water epoch=25 train=0.00932 val=0.04069
+gru-3ad4606f6cb814c3 water epoch=30 train=0.00956 val=0.03851
+gru-3ad4606f6cb814c3 water epoch=35 train=0.01012 val=0.07730
+gru-3ad4606f6cb814c3 water epoch=40 train=0.01071 val=0.03329
+gru-3ad4606f6cb814c3 water epoch=45 train=0.01186 val=0.03725
+gru-3ad4606f6cb814c3 carbon epoch=1 train=0.46962 val=0.26421
+gru-3ad4606f6cb814c3 carbon epoch=5 train=0.01584 val=0.20173
+gru-3ad4606f6cb814c3 carbon epoch=10 train=0.01045 val=0.06018
+gru-3ad4606f6cb814c3 carbon epoch=15 train=0.00988 val=0.06497
+gru-3ad4606f6cb814c3 carbon epoch=20 train=0.00978 val=0.04331
+gru-3ad4606f6cb814c3 carbon epoch=25 train=0.00996 val=0.04225
+gru-3ad4606f6cb814c3 carbon epoch=30 train=0.01027 val=0.04451
+gru-3ad4606f6cb814c3 carbon epoch=35 train=0.01059 val=0.03742
+gru-3ad4606f6cb814c3 carbon epoch=40 train=0.01121 val=0.03731
+gru-3ad4606f6cb814c3 carbon epoch=45 train=0.01207 val=0.03584
+gru-3ad4606f6cb814c3 carbon epoch=50 train=0.01292 val=0.04562
+gru-3ad4606f6cb814c3 carbon epoch=55 train=0.01443 val=0.03542
+gru-3ad4606f6cb814c3 carbon epoch=60 train=0.01587 val=0.03676
+gru-3ad4606f6cb814c3 val gru: cost=229750855.39 gap=1.509% mean_nrmse=0.2038

@@ -116,3 +116,62 @@ def test_num_loc_is_derived_not_hardcoded():
     price, water, carbon, workload = _tiny_instance(num_loc=4, horizon=3)
     cost, allocation = mpc.offline_oracle(price, water, carbon, workload, l1=60, l2=1500)
     assert allocation.shape == (4, 3)
+
+
+def test_terminal_completion_under_forecast_errors_and_arbitrary_capacity():
+    price, water, carbon, workload = _tiny_instance(num_loc=4, horizon=19)
+    workload *= 0.25
+    horizon = 5
+    predictions = [
+        np.full((19, array.shape[0], horizon), fill)
+        for array, fill in ((price, 30), (water, 1), (carbon, 100), (workload, 1000))
+    ]
+    allocation, diagnostics = mpc.run_receding_horizon(
+        *predictions,
+        price,
+        water,
+        carbon,
+        workload,
+        l1=60,
+        l2=1500,
+        max_cap=0.4,
+        workload_upper_bound=1.5,
+        return_diagnostics=True,
+    )
+    assert diagnostics["valid"]
+    assert abs(diagnostics["remaining_backlog"]) < 1e-5
+    assert diagnostics["clipped_forecast_values"] > 0
+    assert allocation.max() <= 0.4 + 1e-7
+    np.testing.assert_allclose(allocation.sum(), workload.sum(), atol=1e-5)
+    assert np.all(np.cumsum(allocation.sum(axis=0)) <= np.cumsum(workload[0]) + 1e-5)
+
+
+def test_solver_infeasibility_is_explicit():
+    import pytest
+
+    price, water, carbon, workload = _tiny_instance(num_loc=2, horizon=2)
+    workload[:] = 1000
+    with pytest.raises(mpc.SchedulingError, match="status"):
+        mpc.mpc_solver(price, water, carbon, workload, (0, np.zeros(2), np.zeros(2)), 60, 1500)
+
+
+def test_upper_bound_violation_is_rejected():
+    import pytest
+
+    price, water, carbon, workload = _tiny_instance(num_loc=2, horizon=3)
+    workload[:] = 1.9
+    predicted = np.ones((3, 2, 2))
+    with pytest.raises(ValueError, match="upper bound"):
+        mpc.run_receding_horizon(
+            predicted,
+            predicted,
+            predicted,
+            predicted[:, :1],
+            price,
+            water,
+            carbon,
+            workload,
+            60,
+            1500,
+            workload_upper_bound=1.5,
+        )

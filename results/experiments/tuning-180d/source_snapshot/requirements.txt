@@ -1,0 +1,10 @@
+# Thin, zero-friction install path (`pip install -r requirements.txt`).
+# The authoritative dependency list is pyproject.toml; prefer
+# `pip install -e ".[dev]"` for development.
+torch>=2.2
+cvxpy>=1.4
+scipy>=1.13
+numpy>=1.26
+pandas>=2.1
+matplotlib>=3.8
+tqdm>=4.66

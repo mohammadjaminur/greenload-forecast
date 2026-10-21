@@ -1,0 +1,42 @@
+# Paths normalized for publication; commands are relative to the repository root.
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/gru-db175bd2c7d3150e --stage train --method gru --worker-seconds 10034.506905124523 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+gru-db175bd2c7d3150e workload epoch=1 train=0.47706 val=0.10832
+gru-db175bd2c7d3150e workload epoch=5 train=0.07996 val=0.08366
+gru-db175bd2c7d3150e workload epoch=10 train=0.07743 val=0.07716
+gru-db175bd2c7d3150e workload epoch=15 train=0.07405 val=0.07607
+gru-db175bd2c7d3150e workload epoch=20 train=0.07471 val=0.07813
+gru-db175bd2c7d3150e price epoch=1 train=0.63660 val=0.24680
+gru-db175bd2c7d3150e price epoch=5 train=0.13807 val=0.11823
+gru-db175bd2c7d3150e price epoch=10 train=0.04064 val=0.03574
+gru-db175bd2c7d3150e price epoch=15 train=0.03071 val=0.02763
+gru-db175bd2c7d3150e price epoch=20 train=0.02816 val=0.02650
+gru-db175bd2c7d3150e price epoch=25 train=0.02698 val=0.02459
+gru-db175bd2c7d3150e price epoch=30 train=0.02695 val=0.02494
+gru-db175bd2c7d3150e water epoch=1 train=0.63476 val=0.19174
+gru-db175bd2c7d3150e water epoch=5 train=0.12276 val=0.10914
+gru-db175bd2c7d3150e water epoch=10 train=0.03485 val=0.03292
+gru-db175bd2c7d3150e water epoch=15 train=0.03047 val=0.02863
+gru-db175bd2c7d3150e water epoch=20 train=0.02819 val=0.02683
+gru-db175bd2c7d3150e water epoch=25 train=0.02753 val=0.02649
+gru-db175bd2c7d3150e water epoch=30 train=0.02596 val=0.02745
+gru-db175bd2c7d3150e water epoch=35 train=0.02553 val=0.02625
+gru-db175bd2c7d3150e water epoch=40 train=0.02526 val=0.02504
+gru-db175bd2c7d3150e water epoch=45 train=0.02493 val=0.02603
+gru-db175bd2c7d3150e carbon epoch=1 train=0.62999 val=0.16431
+gru-db175bd2c7d3150e carbon epoch=5 train=0.10329 val=0.09499
+gru-db175bd2c7d3150e carbon epoch=10 train=0.04860 val=0.04774
+gru-db175bd2c7d3150e carbon epoch=15 train=0.03313 val=0.03538
+gru-db175bd2c7d3150e carbon epoch=20 train=0.03055 val=0.03753
+gru-db175bd2c7d3150e carbon epoch=25 train=0.02906 val=0.03364
+gru-db175bd2c7d3150e carbon epoch=30 train=0.02918 val=0.03054
+gru-db175bd2c7d3150e carbon epoch=35 train=0.02861 val=0.03001
+gru-db175bd2c7d3150e carbon epoch=40 train=0.02729 val=0.03046
+gru-db175bd2c7d3150e carbon epoch=45 train=0.02701 val=0.02899
+gru-db175bd2c7d3150e carbon epoch=50 train=0.02716 val=0.02848
+gru-db175bd2c7d3150e carbon epoch=55 train=0.02683 val=0.02806
+gru-db175bd2c7d3150e carbon epoch=60 train=0.02621 val=0.02820
+gru-db175bd2c7d3150e val gru: cost=229358748.56 gap=1.336% mean_nrmse=0.1883
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/gru-db175bd2c7d3150e --stage test --method gru --worker-seconds 9657.197747166269 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+gru-db175bd2c7d3150e test gru: cost=214117034.95 gap=1.551% mean_nrmse=0.1965

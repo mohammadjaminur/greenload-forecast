@@ -1,0 +1,6 @@
+{
+  "revision": "a5d5201ccf0d46b965daa7df4892345adae5bc5f",
+  "protocol": "Legacy 457-hour results; not comparable to corrected 180-day experiments.",
+  "legacy_raw_npz_sha256": "1bb307e3072aebe85320752aa2f9c57e6ed5155be980f1cdea8142d708b0e514",
+  "checkpoint_location": "results/checkpoints (original files retained locally)"
+}

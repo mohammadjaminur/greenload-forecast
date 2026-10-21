@@ -90,6 +90,7 @@ def generate_workload(
     num_loc: int,
     max_cap: float,
     target_utilization: float = 0.55,
+    upper_fraction: float = 0.95,
 ) -> np.ndarray:
     """Generate a single global (hours, 1) workload trace, business-hours-shaped.
 
@@ -111,7 +112,9 @@ def generate_workload(
         phase=0.0,
     )
     floor = 0.05 * fleet_capacity_per_hour
-    return np.clip(raw, a_min=floor, a_max=fleet_capacity_per_hour * 0.95).reshape(hours, 1)
+    return np.clip(raw, a_min=floor, a_max=fleet_capacity_per_hour * upper_fraction).reshape(
+        hours, 1
+    )
 
 
 def generate_raw_series(cfg: Config = DEFAULT, hours: int | None = None, seed: int | None = None):
@@ -119,22 +122,30 @@ def generate_raw_series(cfg: Config = DEFAULT, hours: int | None = None, seed: i
 
     Keys: 'workload' (T,1), 'price'/'water'/'carbon' (T, num_loc).
     """
-    hours = hours or cfg.total_hours
-    seed = cfg.seed if seed is None else seed
-    root_rng = np.random.default_rng(seed)
-
+    hours = cfg.total_hours if hours is None else hours
+    seed = cfg.data_seed if seed is None else seed
+    # Independent streams prevent trace length from changing other channels/locations.
+    streams = np.random.SeedSequence(seed).spawn(4)
     series = {
-        "workload": generate_workload(root_rng, hours, cfg.num_loc, cfg.max_cap),
+        "workload": generate_workload(
+            np.random.default_rng(streams[0]),
+            hours,
+            cfg.num_loc,
+            cfg.max_cap,
+            upper_fraction=cfg.workload_upper_fraction,
+        ),
     }
-    for channel in ("price", "water", "carbon"):
-        series[channel] = generate_location_channel(root_rng, hours, cfg.num_loc, channel)
+    for stream, channel in zip(streams[1:], ("price", "water", "carbon"), strict=True):
+        series[channel] = generate_location_channel(
+            np.random.default_rng(stream), hours, cfg.num_loc, channel
+        )
     return series
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hours", type=int, default=DEFAULT.total_hours)
-    parser.add_argument("--seed", type=int, default=DEFAULT.seed)
+    parser.add_argument("--seed", type=int, default=DEFAULT.data_seed)
     parser.add_argument("--out", type=Path, default=Path("data/raw_series.npz"))
     args = parser.parse_args()
 

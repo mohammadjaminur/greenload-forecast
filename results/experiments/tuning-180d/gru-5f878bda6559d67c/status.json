@@ -1,0 +1,6 @@
+{
+  "status": "complete",
+  "stage": "train",
+  "method": "gru",
+  "valid": true
+}

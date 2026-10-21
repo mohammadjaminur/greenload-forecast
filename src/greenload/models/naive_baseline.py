@@ -23,6 +23,6 @@ class NaiveForecaster:
         hidden: torch.Tensor | None = None,
         target: torch.Tensor | None = None,
         sampling_prob: float = 0.0,
+        future: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, None]:
-        # x: (B, 1, 1) -> hold constant for `horizon` steps -> (B, 1, horizon)
-        return x.expand(-1, -1, self.horizon).clone(), None
+        return x[:, -1:, :1].expand(-1, -1, self.horizon).clone(), None

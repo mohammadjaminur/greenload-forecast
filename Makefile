@@ -1,23 +1,28 @@
-.PHONY: install data train evaluate test lint smoke
+.PHONY: install data train evaluate experiment test lint smoke
+PYTHON ?= python
+RUN_DIR ?= results/manual
 
 install:
-	pip install -e ".[dev]"
+	$(PYTHON) -m pip install -e ".[dev]"
 
 data:
-	python -m greenload.data.generate_synthetic_data --out data/raw_series.npz
+	$(PYTHON) -m greenload.data.generate_synthetic_data --out data/raw_series.npz
 
 train:
-	python -m greenload.train
+	$(PYTHON) -m greenload.train --run-dir "$(RUN_DIR)"
 
 evaluate:
-	python -m greenload.evaluate
+	$(PYTHON) -m greenload.evaluate --run-dir "$(RUN_DIR)"
+
+experiment:
+	$(PYTHON) -m greenload.experiments --budget-hours 4
 
 test:
-	pytest tests/ -q
+	$(PYTHON) -m pytest tests/ -q
 
 lint:
-	ruff check src/ tests/
+	$(PYTHON) -m ruff check src/ tests/
 
 smoke:
-	python -m greenload.train --smoke-test
-	python -m greenload.evaluate --smoke-test
+	$(PYTHON) -m greenload.train --smoke-test --run-dir results/smoke
+	$(PYTHON) -m greenload.evaluate --run-dir results/smoke

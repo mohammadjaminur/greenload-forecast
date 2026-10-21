@@ -1,153 +1,148 @@
-"""Convex-optimization workload scheduler: receding-horizon MPC + offline oracle.
-
-Ported and cleaned from the original research codebase's `utils/solve.py`.
-Only the receding-horizon MPC solver and the offline (perfect-foresight)
-oracle baseline are kept -- the original file also contained a structurally
-different online Lyapunov drift-plus-penalty scheduler (~35% of that file)
-that doesn't take predictions as input at all. That's a different control
-paradigm and is intentionally out of scope for this predict-then-schedule
-showcase; see the README's "what's not included" note.
-
-Objective (both solvers): minimize
-    price_cost + l1 * max_over_locations(water_cost) + l2 * max_over_locations(carbon_cost)
-subject to per-location hourly capacity and (for MPC) a cumulative
-"can't allocate more than has arrived yet" workload constraint.
-
-Unlike the original, `num_loc` is always derived from the input arrays'
-shape rather than hardcoded to 10.
-"""
+"""Capacity-safe MPC and a matching finite-period perfect-foresight oracle."""
 
 from __future__ import annotations
+
+from collections import Counter
 
 import cvxpy as cp
 import numpy as np
 
+from greenload.artifacts import check_deadline
 
-def _cost_terms(y: cp.Variable, price: np.ndarray, water: np.ndarray, carbon: np.ndarray):
-    price_cost = cp.sum(cp.multiply(y, price))
-    water_cost = cp.norm(cp.sum(cp.multiply(y, water), axis=1), p="inf")
-    carbon_cost = cp.norm(cp.sum(cp.multiply(y, carbon), axis=1), p="inf")
-    return price_cost, water_cost, carbon_cost
+SOLVER = "CLARABEL"
+
+
+class SchedulingError(RuntimeError):
+    pass
+
+
+def _solve(problem):
+    try:
+        problem.solve(solver=SOLVER, warm_start=True, tol_gap_abs=1e-7, tol_feas=1e-8)
+    except cp.error.SolverError as exc:
+        raise SchedulingError(f"Solver failed: {exc}") from exc
+    if problem.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
+        raise SchedulingError(f"Solver status: {problem.status}")
+    return problem.status
+
+
+class HorizonProblem:
+    """Reuse the parameterized convex program across hours of the same horizon."""
+
+    def __init__(self, num_loc, hours, l1, l2, max_cap):
+        self.y = cp.Variable((num_loc, hours), nonneg=True)
+        self.price = cp.Parameter((num_loc, hours), nonneg=True)
+        self.water = cp.Parameter((num_loc, hours), nonneg=True)
+        self.carbon = cp.Parameter((num_loc, hours), nonneg=True)
+        self.arrivals = cp.Parameter(hours, nonneg=True)
+        self.hist_water = cp.Parameter(num_loc, nonneg=True)
+        self.hist_carbon = cp.Parameter(num_loc, nonneg=True)
+        self.minimum_service = cp.Parameter(nonneg=True)
+        price_cost = cp.sum(cp.multiply(self.y, self.price))
+        water_cost = cp.max(cp.sum(cp.multiply(self.y, self.water), axis=1) + self.hist_water)
+        carbon_cost = cp.max(cp.sum(cp.multiply(self.y, self.carbon), axis=1) + self.hist_carbon)
+        objective = (price_cost + l1 * water_cost + l2 * carbon_cost) / max(l1, l2, 1)
+        cumulative = cp.cumsum(cp.sum(self.y, axis=0))
+        self.problem = cp.Problem(
+            cp.Minimize(objective),
+            [
+                self.y <= max_cap,
+                cumulative <= self.arrivals,
+                cp.sum(self.y) == self.arrivals[-1],
+                cp.sum(self.y[:, 0]) >= self.minimum_service,
+            ],
+        )
+        self.scale = max(l1, l2, 1)
+
+    def solve(self, price, water, carbon, workload, historical, minimum_service=0.0):
+        self.price.value = price
+        self.water.value = water
+        self.carbon.value = carbon
+        self.arrivals.value = np.cumsum(workload.reshape(-1))
+        self.hist_water.value = np.maximum(historical[1], 0)
+        self.hist_carbon.value = np.maximum(historical[2], 0)
+        self.minimum_service.value = minimum_service
+        status = _solve(self.problem)
+        return self.problem.value * self.scale + historical[0], self.y.value, status
 
 
 def offline_oracle(
-    price: np.ndarray,
-    water: np.ndarray,
-    carbon: np.ndarray,
-    workload: np.ndarray,
-    l1: float,
-    l2: float,
-    max_cap: float = 1.0,
-    verbose: bool = False,
-) -> tuple[float, np.ndarray]:
-    """Perfect-foresight upper-bound baseline: solve once with the true future.
-
-    Args:
-        price, water, carbon: (num_loc, num_hours) true signals.
-        workload: (1, num_hours) true workload trace.
-        l1, l2: water / carbon objective weights.
-        max_cap: max workload fraction routable to one location per hour.
-
-    Returns: (optimal_cost, allocation) where allocation is (num_loc, num_hours).
-    """
+    price,
+    water,
+    carbon,
+    workload,
+    l1,
+    l2,
+    max_cap=1.0,
+    verbose=False,
+    workload_upper_bound=None,
+    forecast_horizon=None,
+):
+    del verbose
     num_loc, num_hours = price.shape
     y = cp.Variable((num_loc, num_hours), nonneg=True)
-    price_cost, water_cost, carbon_cost = _cost_terms(y, price, water, carbon)
-    total_cost = price_cost + l1 * water_cost + l2 * carbon_cost
-
-    constraints = [y <= max_cap]
-    for i in range(num_hours):
-        constraints += [cp.sum(y[:, : i + 1]) <= cp.sum(workload[:, : i + 1])]
-    constraints += [cp.sum(y) == cp.sum(workload)]
-
-    problem = cp.Problem(cp.Minimize(total_cost), constraints)
-    problem.solve(verbose=verbose)
-    return problem.value, y.value
+    cumulative = cp.cumsum(cp.sum(y, axis=0))
+    arrivals = np.cumsum(workload.reshape(-1))
+    constraints = [y <= max_cap, cumulative <= arrivals, cp.sum(y) == arrivals[-1]]
+    if workload_upper_bound is not None:
+        if forecast_horizon is None:
+            raise ValueError("Oracle reserve requires a forecast horizon")
+        slack = num_loc * max_cap - workload_upper_bound
+        if slack < 0 or np.max(workload) > workload_upper_bound + 1e-8:
+            raise ValueError("Actual workload exceeds the declared upper bound")
+        reserve = np.minimum(forecast_horizon, np.arange(num_hours - 1, -1, -1)) * slack
+        constraints.append(cumulative >= arrivals - reserve)
+    objective = (
+        cp.sum(cp.multiply(y, price))
+        + l1 * cp.max(cp.sum(cp.multiply(y, water), axis=1))
+        + l2 * cp.max(cp.sum(cp.multiply(y, carbon), axis=1))
+    ) / max(l1, l2, 1)
+    problem = cp.Problem(cp.Minimize(objective), constraints)
+    _solve(problem)
+    if y.value is None:
+        raise SchedulingError("Oracle returned no allocation")
+    return float(problem.value * max(l1, l2, 1)), y.value
 
 
 def mpc_solver(
-    price_window: np.ndarray,
-    water_window: np.ndarray,
-    carbon_window: np.ndarray,
-    workload_window: np.ndarray,
-    historical_cost: tuple[float, np.ndarray, np.ndarray],
-    l1: float,
-    l2: float,
-    max_cap: float = 1.0,
-    verbose: bool = False,
-) -> tuple[float, np.ndarray]:
-    """One receding-horizon MPC re-solve, over a lookahead window.
-
-    Args:
-        price_window, water_window, carbon_window: (num_loc, horizon+1) --
-            the true current value in column 0, forecast for the rest.
-        workload_window: (1, horizon+1), same convention.
-        historical_cost: (historical_price_cost, historical_water_cost_per_loc,
-            historical_carbon_cost_per_loc) accumulated from all previous
-            re-solves, so the running total (not just this window) is what's
-            actually being optimized against the water/carbon fairness cap.
-        l1, l2: water / carbon objective weights.
-
-    Returns: (optimal_cost, allocation) where allocation is (num_loc, horizon+1);
-        in the receding-horizon loop only column 0 (this hour's decision) is applied.
-    """
-    hist_price, hist_water, hist_carbon = historical_cost
-    num_loc, horizon = price_window.shape
-    y = cp.Variable((num_loc, horizon), nonneg=True)
-
-    price_cost = cp.sum(cp.multiply(y, price_window)) + hist_price
-    water_cost = cp.norm(cp.sum(cp.multiply(y, water_window), axis=1) + hist_water, p="inf")
-    carbon_cost = cp.norm(cp.sum(cp.multiply(y, carbon_window), axis=1) + hist_carbon, p="inf")
-    total_cost = price_cost + l1 * water_cost + l2 * carbon_cost
-
-    constraints = [y <= max_cap]
-    for i in range(horizon):
-        constraints += [cp.sum(y[:, : i + 1]) <= cp.sum(workload_window[:, : i + 1])]
-    constraints += [cp.sum(y) == cp.sum(workload_window)]
-
-    problem = cp.Problem(cp.Minimize(total_cost), constraints)
-    problem.solve(verbose=verbose)
-    return problem.value, y.value
+    price_window,
+    water_window,
+    carbon_window,
+    workload_window,
+    historical_cost,
+    l1,
+    l2,
+    max_cap=1.0,
+    verbose=False,
+    minimum_service=0.0,
+):
+    del verbose
+    problem = HorizonProblem(price_window.shape[0], price_window.shape[1], l1, l2, max_cap)
+    value, allocation, _ = problem.solve(
+        price_window,
+        water_window,
+        carbon_window,
+        workload_window,
+        historical_cost,
+        minimum_service,
+    )
+    return value, allocation
 
 
-def distribute_remaining_workload(window: np.ndarray, remaining: float) -> tuple[np.ndarray, float]:
-    """Carry any workload that couldn't be scheduled last hour into this window,
-    spilling into later hours (capped at 10 units/hour) if it doesn't fit in hour 0.
-    """
+def distribute_remaining_workload(window, remaining, fleet_capacity=10.0):
+    """Compatibility helper; remaining work is carried once, never counted twice."""
     window = window.copy()
-    i = 0
-    while remaining != 0:
-        if i >= window.shape[1]:
-            break
-        window[0, i] += remaining
-        if window[0, i] > 10:
-            remaining = window[0, i] - 10
-            window[0, i] = 10
-            i += 1
-        else:
-            remaining = 0
-    return window, remaining
+    for index in range(window.shape[1]):
+        added = min(max(0.0, fleet_capacity - window[0, index]), max(remaining, 0.0))
+        window[0, index] += added
+        remaining -= added
+    return window, max(remaining, 0.0)
 
 
-def evaluate_allocation(
-    allocation: np.ndarray,
-    price: np.ndarray,
-    water: np.ndarray,
-    carbon: np.ndarray,
-    l1: float,
-    l2: float,
-) -> dict[str, float]:
-    """Compute price / water / carbon / total cost for a realized (num_loc, num_hours)
-    allocation against the true signals, mirroring the MPC objective.
-    """
-    price_per_loc = np.multiply(price, allocation).sum(axis=1)
-    water_per_loc = np.multiply(water, allocation).sum(axis=1)
-    carbon_per_loc = np.multiply(carbon, allocation).sum(axis=1)
-
-    price_cost = float(np.sum(price_per_loc))
-    water_cost = float(l1 * np.linalg.norm(water_per_loc, ord=np.inf))
-    carbon_cost = float(l2 * np.linalg.norm(carbon_per_loc, ord=np.inf))
-
+def evaluate_allocation(allocation, price, water, carbon, l1, l2):
+    price_cost = float(np.sum(price * allocation))
+    water_cost = float(l1 * np.max(np.sum(water * allocation, axis=1)))
+    carbon_cost = float(l2 * np.max(np.sum(carbon * allocation, axis=1)))
     return {
         "price_cost": price_cost,
         "water_cost": water_cost,
@@ -156,79 +151,134 @@ def evaluate_allocation(
     }
 
 
-def run_receding_horizon(
-    predicted_price: np.ndarray,
-    predicted_water: np.ndarray,
-    predicted_carbon: np.ndarray,
-    predicted_workload: np.ndarray,
-    true_price: np.ndarray,
-    true_water: np.ndarray,
-    true_carbon: np.ndarray,
-    true_workload: np.ndarray,
-    l1: float,
-    l2: float,
-    max_cap: float = 1.0,
-    verbose: bool = False,
-) -> np.ndarray:
-    """Run the full receding-horizon MPC loop over a test trace.
-
-    At each hour `i`, combines the true current value with a `horizon`-step
-    forecast (`predicted_*[i]`), re-solves the MPC problem, applies only the
-    first hour's decision, and accumulates realized cost so the next re-solve
-    optimizes against the running total.
-
-    Within its own lookahead window, the solver is free to plan to serve this
-    hour's workload later (in one of the forecast columns) rather than right
-    now -- that's a legitimate MPC planning choice. But only column 0 is ever
-    realized; the rest of the plan is thrown away and re-solved next hour. So
-    any workload the solver *planned* to defer must be explicitly carried
-    forward as backlog into the next hour's window, or it silently vanishes
-    (never actually served, but also never counted as a cost) -- which makes
-    a forecaster look artificially cheap simply for causing the solver to
-    defer more. Backlog is tracked the same way the original codebase's
-    `mpc_allocation` did: true workload arrived so far, minus workload
-    actually realized so far.
-
-    Args:
-        predicted_*: (num_hours, num_loc, horizon) forecasts made at each hour.
-        true_*: (num_loc, num_hours) [or (1, num_hours) for workload] realized signals.
-
-    Returns: realized allocation, (num_loc, num_hours).
-    """
-    num_hours = true_price.shape[1]
-    num_loc = true_price.shape[0]
-
-    hist_price, hist_water, hist_carbon = 0.0, np.zeros(num_loc), np.zeros(num_loc)
-    action_sum = 0.0
-    cap_carryover = 0.0
-    realized = []
-
-    for i in range(num_hours):
-        price_window = np.concatenate([true_price[:, [i]], predicted_price[i]], axis=1)
-        water_window = np.concatenate([true_water[:, [i]], predicted_water[i]], axis=1)
-        carbon_window = np.concatenate([true_carbon[:, [i]], predicted_carbon[i]], axis=1)
-        workload_window = np.concatenate([true_workload[:, [i]], predicted_workload[i]], axis=1)
-
-        backlog = float(true_workload[:, :i].sum()) - action_sum + cap_carryover
-        workload_window, cap_carryover = distribute_remaining_workload(workload_window, backlog)
-
-        _, y = mpc_solver(
-            price_window,
-            water_window,
-            carbon_window,
-            workload_window,
-            (hist_price, hist_water, hist_carbon),
-            l1=l1,
-            l2=l2,
-            max_cap=max_cap,
-            verbose=verbose,
+def allocation_diagnostics(allocation, workload, max_cap):
+    cumulative = np.cumsum(allocation.sum(axis=0))
+    arrived = np.cumsum(workload.reshape(-1))
+    backlog = arrived - cumulative
+    result = {
+        "arrived_workload": float(arrived[-1]),
+        "served_workload": float(cumulative[-1]),
+        "remaining_backlog": float(backlog[-1]),
+        "max_backlog": float(np.max(backlog)),
+        "max_capacity_violation": float(max(0, np.max(allocation) - max_cap)),
+        "max_causality_violation": float(max(0, np.max(-backlog))),
+        "max_nonnegativity_violation": float(max(0, -np.min(allocation))),
+    }
+    result["valid"] = bool(
+        abs(result["remaining_backlog"]) <= 1e-4
+        and max(
+            result[k]
+            for k in (
+                "max_capacity_violation",
+                "max_causality_violation",
+                "max_nonnegativity_violation",
+            )
         )
+        <= 1e-5
+    )
+    return result
 
-        action = y[:, 0]
-        hist_price += float(np.sum(action * true_price[:, i]))
-        hist_water += action * true_water[:, i]
-        hist_carbon += action * true_carbon[:, i]
-        action_sum += float(np.sum(action))
+
+def _project_numerical_action(action, lower, upper, max_cap):
+    """Correct tiny solver residuals only; large violations invalidate the run."""
+    clipped = np.clip(action, 0, max_cap)
+    target = np.clip(clipped.sum(), lower, upper)
+    if clipped.sum() > target:
+        clipped *= target / clipped.sum()
+    else:
+        missing = target - clipped.sum()
+        for index in range(len(clipped)):
+            added = min(max_cap - clipped[index], missing)
+            clipped[index] += added
+            missing -= added
+    correction = float(np.abs(clipped - action).sum())
+    if correction > 1e-3:
+        raise SchedulingError(f"Allocation required excessive numerical correction: {correction}")
+    return clipped, correction
+
+
+def run_receding_horizon(
+    predicted_price,
+    predicted_water,
+    predicted_carbon,
+    predicted_workload,
+    true_price,
+    true_water,
+    true_carbon,
+    true_workload,
+    l1,
+    l2,
+    max_cap=1.0,
+    verbose=False,
+    workload_upper_bound=None,
+    return_diagnostics=False,
+    deadline=None,
+):
+    del verbose
+    num_loc, num_hours = true_price.shape
+    horizon = predicted_price.shape[-1]
+    fleet = num_loc * max_cap
+    bound = fleet if workload_upper_bound is None else workload_upper_bound
+    if not (0 < bound <= fleet) or np.max(true_workload) > bound + 1e-8:
+        raise ValueError("Workload violates the declared per-hour upper bound")
+    slack = fleet - bound
+    hist_price, hist_water, hist_carbon = 0.0, np.zeros(num_loc), np.zeros(num_loc)
+    backlog, corrections, clipped_forecasts = 0.0, 0.0, 0
+    realized, statuses, problems = [], Counter(), {}
+    for hour in range(num_hours):
+        check_deadline(deadline)
+        future_hours = min(horizon, num_hours - hour - 1)
+        length = future_hours + 1
+        windows = []
+        for truth, prediction in (
+            (true_price, predicted_price),
+            (true_water, predicted_water),
+            (true_carbon, predicted_carbon),
+            (true_workload, predicted_workload),
+        ):
+            future = prediction[hour, :, :future_hours]
+            if not np.isfinite(future).all():
+                raise SchedulingError("Nonfinite forecast")
+            maximum = bound if truth is true_workload else np.inf
+            bounded = np.clip(future, 0, maximum)
+            clipped_forecasts += int(np.count_nonzero(future != bounded))
+            windows.append(np.concatenate([truth[:, hour : hour + 1], bounded], axis=1))
+        available = backlog + float(true_workload[0, hour])
+        windows[3][0, 0] = available
+        # Reserve enough capacity for any allowed future arrival. This invariant
+        # guarantees feasibility and terminal completion without future observations.
+        minimum_service = max(0.0, available - future_hours * slack)
+        if minimum_service > fleet + 1e-6:
+            raise SchedulingError("Terminal reserve became infeasible")
+        if length not in problems:
+            problems[length] = HorizonProblem(num_loc, length, l1, l2, max_cap)
+        _, y, status = problems[length].solve(
+            *windows,
+            (hist_price, hist_water, hist_carbon),
+            minimum_service,
+        )
+        statuses[status] += 1
+        action, correction = _project_numerical_action(y[:, 0], minimum_service, available, max_cap)
+        corrections += correction
+        hist_price += float(np.sum(action * true_price[:, hour]))
+        hist_water += action * true_water[:, hour]
+        hist_carbon += action * true_carbon[:, hour]
+        backlog = max(0.0, available - float(action.sum()))
         realized.append(action)
-
-    return np.stack(realized, axis=1)
+    allocation = np.stack(realized, axis=1)
+    diagnostics = allocation_diagnostics(allocation, true_workload, max_cap)
+    diagnostics.update(
+        {
+            "solver_status_counts": dict(statuses),
+            "solver": SOLVER,
+            "numerical_correction_mass": corrections,
+            "clipped_forecast_values": clipped_forecasts,
+            "reserve_policy": (
+                "backlog <= remaining_lookahead_hours * (fleet_capacity - arrival_bound)"
+            ),
+            "workload_upper_bound": bound,
+        }
+    )
+    if not diagnostics["valid"]:
+        raise SchedulingError(f"Invalid realized schedule: {diagnostics}")
+    return (allocation, diagnostics) if return_diagnostics else allocation

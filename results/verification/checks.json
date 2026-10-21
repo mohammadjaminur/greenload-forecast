@@ -1,0 +1,14 @@
+{
+  "tests": "37 passed on final recheck",
+  "pytest_command": ".venv/bin/python -m pytest tests -q",
+  "lint_command": ".venv/bin/ruff check src tests",
+  "lint": "passed on final recheck",
+  "whitespace_command": "git diff --check",
+  "whitespace": "passed",
+  "smoke": "make smoke PYTHON=.venv/bin/python passed",
+  "end_to_end_search": "results/smoke-search completed with validation_plateau and seed/test artifacts",
+  "plots": "4 scientific figures rendered successfully on smoke artifacts",
+  "source_sha256": "87f9355a8a8fa6d5b206decdc329c12b735e8d16c80fdbbfc9b0ce9385c714cc",
+  "cached_cli_resume": "completed without any retraining",
+  "artifact_audit": "results/experiments/tuning-180d/artifact_audit.json"
+}

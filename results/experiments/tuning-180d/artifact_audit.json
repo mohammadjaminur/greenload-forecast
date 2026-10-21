@@ -1,0 +1,24 @@
+{
+  "evaluations": 26,
+  "distinct_trained_configurations_including_seed_repeats": 12,
+  "trained_signal_models": 48,
+  "dataset_checksums": [
+    "ddcf64d5a3ec1b98ac0efbd46883fa06e1ec9fb6fced97a75cabf5c0ff886f7a"
+  ],
+  "identical_arrivals_per_split": {
+    "val": 4057.3022438,
+    "test": 3910.0404781
+  },
+  "maximum_absolute_terminal_backlog": 7.275957614183426e-12,
+  "all_schedules_valid": true,
+  "best_epoch_checkpoints_verified": true,
+  "selection_precedes_first_test_metric": true,
+  "source_matches_snapshot": true,
+  "elapsed_minutes": 79.28264440625595,
+  "stopping_reason": "untried_neighbor_exhaustion",
+  "saved_forecast_shapes_and_values_verified": true,
+  "saved_allocations_reproduce_reported_costs": true,
+  "checkpoint_metadata_matches_histories": true,
+  "checkpoint_scalers_match_training_only_statistics": true,
+  "source_snapshot_content_verified": true
+}

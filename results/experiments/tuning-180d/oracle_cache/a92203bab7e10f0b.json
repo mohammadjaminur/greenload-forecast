@@ -1,0 +1,18 @@
+{
+  "price_cost": 188704.23715421426,
+  "water_cost": 104118.50151805342,
+  "carbon_cost": 226042482.7641918,
+  "total_cost": 226335305.50286406,
+  "diagnostics": {
+    "arrived_workload": 4057.3022438041276,
+    "served_workload": 4057.3022439651563,
+    "remaining_backlog": -1.6102876543300226e-07,
+    "max_backlog": 12.000000124221941,
+    "max_capacity_violation": 2.319195080424663e-08,
+    "max_causality_violation": 2.7119585865875706e-07,
+    "max_nonnegativity_violation": 0.0,
+    "valid": true
+  },
+  "solver": "CLARABEL",
+  "objective": 226335305.502864
+}

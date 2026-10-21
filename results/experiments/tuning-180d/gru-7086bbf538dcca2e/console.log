@@ -1,0 +1,48 @@
+# Paths normalized for publication; commands are relative to the repository root.
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/gru-7086bbf538dcca2e --stage train --method gru --worker-seconds 10407.497506666929 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+gru-7086bbf538dcca2e workload epoch=1 train=0.47065 val=0.11116
+gru-7086bbf538dcca2e workload epoch=5 train=0.07945 val=0.08509
+gru-7086bbf538dcca2e workload epoch=10 train=0.07719 val=0.07682
+gru-7086bbf538dcca2e workload epoch=15 train=0.07449 val=0.07826
+gru-7086bbf538dcca2e workload epoch=20 train=0.07414 val=0.07516
+gru-7086bbf538dcca2e workload epoch=25 train=0.07415 val=0.07697
+gru-7086bbf538dcca2e workload epoch=30 train=0.07439 val=0.07478
+gru-7086bbf538dcca2e workload epoch=35 train=0.07418 val=0.07646
+gru-7086bbf538dcca2e price epoch=1 train=0.66310 val=0.24712
+gru-7086bbf538dcca2e price epoch=5 train=0.13051 val=0.10581
+gru-7086bbf538dcca2e price epoch=10 train=0.03822 val=0.03458
+gru-7086bbf538dcca2e price epoch=15 train=0.03475 val=0.03073
+gru-7086bbf538dcca2e price epoch=20 train=0.03180 val=0.03094
+gru-7086bbf538dcca2e price epoch=25 train=0.03015 val=0.02802
+gru-7086bbf538dcca2e price epoch=30 train=0.02908 val=0.02830
+gru-7086bbf538dcca2e price epoch=35 train=0.02853 val=0.02562
+gru-7086bbf538dcca2e price epoch=40 train=0.02789 val=0.02669
+gru-7086bbf538dcca2e water epoch=1 train=0.60978 val=0.19410
+gru-7086bbf538dcca2e water epoch=5 train=0.14803 val=0.13407
+gru-7086bbf538dcca2e water epoch=10 train=0.04296 val=0.03912
+gru-7086bbf538dcca2e water epoch=15 train=0.03412 val=0.03334
+gru-7086bbf538dcca2e water epoch=20 train=0.03120 val=0.03074
+gru-7086bbf538dcca2e water epoch=25 train=0.02981 val=0.02965
+gru-7086bbf538dcca2e water epoch=30 train=0.02872 val=0.02917
+gru-7086bbf538dcca2e water epoch=35 train=0.02842 val=0.03033
+gru-7086bbf538dcca2e water epoch=40 train=0.02746 val=0.03013
+gru-7086bbf538dcca2e water epoch=45 train=0.02707 val=0.02753
+gru-7086bbf538dcca2e water epoch=50 train=0.02695 val=0.02700
+gru-7086bbf538dcca2e water epoch=55 train=0.02610 val=0.02825
+gru-7086bbf538dcca2e water epoch=60 train=0.02574 val=0.02945
+gru-7086bbf538dcca2e carbon epoch=1 train=0.62135 val=0.15361
+gru-7086bbf538dcca2e carbon epoch=5 train=0.08809 val=0.08410
+gru-7086bbf538dcca2e carbon epoch=10 train=0.04131 val=0.04331
+gru-7086bbf538dcca2e carbon epoch=15 train=0.03537 val=0.04019
+gru-7086bbf538dcca2e carbon epoch=20 train=0.03505 val=0.03603
+gru-7086bbf538dcca2e carbon epoch=25 train=0.03403 val=0.03420
+gru-7086bbf538dcca2e carbon epoch=30 train=0.03240 val=0.03362
+gru-7086bbf538dcca2e carbon epoch=35 train=0.03113 val=0.03364
+gru-7086bbf538dcca2e carbon epoch=40 train=0.03076 val=0.03275
+gru-7086bbf538dcca2e carbon epoch=45 train=0.03009 val=0.03198
+gru-7086bbf538dcca2e carbon epoch=50 train=0.02957 val=0.03209
+gru-7086bbf538dcca2e val gru: cost=229016451.64 gap=1.185% mean_nrmse=0.1934
+
+python -m greenload.experiments --worker ./results/experiments/tuning-180d/gru-7086bbf538dcca2e --stage test --method gru --worker-seconds 9676.23893008288 --cache-dir ./results/experiments/tuning-180d/oracle_cache
+gru-7086bbf538dcca2e test gru: cost=213817370.51 gap=1.409% mean_nrmse=0.2021

@@ -15,11 +15,16 @@ venv/
 # NOT src/greenload/data/ (that's source code, not generated output).
 /data/
 
-# Trained model weights (~75MB for all 8 models -- regenerate via `make train`,
-# ~10-15 min on CPU). Figures, metrics.json, and training_history.json ARE
-# committed: small, and what the README/demo notebook actually need to render
-# without anyone having to retrain first.
+# Legacy trained weights are retained locally.
 results/checkpoints/
 
 # OS
 .DS_Store
+
+# Experiment weights/arrays are reproducible; keep configs, logs and reports.
+results/**/*.pt
+results/**/*.npz
+results/smoke*/
+
+# Auxiliary smoke-test oracle cache; published experiment caches remain included.
+/results/oracle_cache/

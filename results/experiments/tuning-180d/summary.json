@@ -1,0 +1,28 @@
+{
+  "selected_run": "gru-7086bbf538dcca2e",
+  "initial_run": "gru-5c108e2b06f1f75b",
+  "elapsed_minutes": 79.28264440625595,
+  "stopping_reason": "untried_neighbor_exhaustion",
+  "distinct_search_setups": 8,
+  "confirmation_seeds": [
+    42,
+    43,
+    44
+  ],
+  "test_cost_reduction_vs_persistence_pct": 10.807250805621837,
+  "test_cost_reduction_vs_initial_seed42_pct": 0.13320723853911254,
+  "test_selected_cost_increase_vs_ridge_pct": 0.04327892519904175,
+  "test_selected_seed_mean_cost_reduction_vs_persistence_pct": 10.671737565659667,
+  "test_selected_seed_mean_cost_increase_vs_initial_pct": 0.0068892842342460625,
+  "test_forecast_nrmse_reduction_vs_persistence_pct": 73.86982840023141,
+  "test_cost_seed_means": {
+    "initial": 214127477.85281634,
+    "selected": 214142229.70338926
+  },
+  "test_cost_seed_sample_stds": {
+    "initial": 31456.760927762178,
+    "selected": 281336.4670343758
+  },
+  "robust_hyperparameter_tuning_gain_demonstrated": false,
+  "dataset_scope": "one fixed 180-day synthetic trace; 120/30/30-day chronological split"
+}
